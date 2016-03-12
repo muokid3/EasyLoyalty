@@ -1,10 +1,14 @@
 package com.easycoach.easyloyalty;
 
+import android.app.AlarmManager;
 import android.app.AlertDialog;
 import android.app.PendingIntent;
+import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.nfc.NdefMessage;
 import android.nfc.NdefRecord;
@@ -25,9 +29,12 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ListAdapter;
+import android.widget.ListView;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.ScrollView;
+import android.widget.SimpleAdapter;
 import android.widget.Spinner;
 import android.widget.Toast;
 
@@ -38,11 +45,23 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.easycoach.easyloyalty.utils.Displays;
-import com.easycoach.easyloyalty.utils.User;
+import com.easycoach.easyloyalty.utils.EasyDBHelper;
+import com.easycoach.easyloyalty.utils.SampleBC;
 import com.easycoach.easyloyalty.utils.UserLocalStore;
 import com.easycoach.easyloyalty.utils.VolleyErrors;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.loopj.android.http.AsyncHttpClient;
+import com.loopj.android.http.AsyncHttpResponseHandler;
+import com.loopj.android.http.RequestParams;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -56,9 +75,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     RadioButton payTypeButton;
     RadioGroup payTypeGroup;
     ScrollView firstView, secondView;
-    String transType, amount, pin;
+    String transType, amount, pin, spinFromString, spinToString;
     NfcAdapter nfcAdapter;
-    EditText pinET, amountET;
+    EditText pinET;
     private PendingIntent pendingIntent;
     private IntentFilter[] intentFilters;
     private String accountNo;
@@ -73,9 +92,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     public static final String KEY_AGENT_NAME = "name";
     public static final String KEY_BRANCH = "branch";
 
-    SweetAlertDialog pDialog;
+    SweetAlertDialog pDialog, syncPDialog, syncSuccessPdialog, routeUnavailablePdialog;
+
+    Spinner spinTo, spinFrom;
 
     UserLocalStore userLocalStore;
+    EasyDBHelper easyDBHelper;
+    HashMap<String, String> queryValues;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,6 +106,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         setContentView(R.layout.activity_main);
 
         userLocalStore = new UserLocalStore(this);
+
+        easyDBHelper = new EasyDBHelper(this);
+        //SQLiteDatabase easySQliteDb = easyDBHelper.getWritableDatabase();
 
 
         toolbar = (Toolbar) findViewById(R.id.app_bar);
@@ -95,8 +121,36 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         pDialog.setTitleText("Loading");
         pDialog.setCancelable(false);
 
+        syncPDialog = new SweetAlertDialog(this, SweetAlertDialog.PROGRESS_TYPE);
+        syncPDialog.getProgressHelper().setBarColor(Color.parseColor("#A5DC86"));
+        syncPDialog.setTitleText("Syncing...");
+        syncPDialog.setContentText("Transferring Data from Remote MySQL DB and Syncing SQLite. Please wait...");
+        syncPDialog.setCancelable(false);
+
+        syncSuccessPdialog = new SweetAlertDialog(this, SweetAlertDialog.SUCCESS_TYPE);
+        syncSuccessPdialog.getProgressHelper().setBarColor(Color.parseColor("#A5DC86"));
+        syncSuccessPdialog.setTitleText("Success!");
+        syncSuccessPdialog.setContentText("Database Synced Successfully!");
+        syncSuccessPdialog.setConfirmClickListener(new SweetAlertDialog.OnSweetClickListener() {
+            @Override
+            public void onClick(SweetAlertDialog sweetAlertDialog) {
+                reloadActivity();
+            }
+        });
+
+        routeUnavailablePdialog = new SweetAlertDialog(this, SweetAlertDialog.WARNING_TYPE);
+        routeUnavailablePdialog.getProgressHelper().setBarColor(Color.parseColor("#A5DC86"));
+        routeUnavailablePdialog.setTitleText("Warning!");
+        routeUnavailablePdialog.setContentText("This route has not yet been registered");
+        routeUnavailablePdialog.setConfirmClickListener(new SweetAlertDialog.OnSweetClickListener() {
+            @Override
+            public void onClick(SweetAlertDialog sweetAlertDialog) {
+                startActivity(new Intent(MainActivity.this, MainActivity.class));
+            }
+        });
+
         pinET = (EditText)findViewById(R.id.pin);
-        amountET = (EditText)findViewById(R.id.amount);
+
 
         payTypeGroup = (RadioGroup)findViewById(R.id.payTypeRadioGroup);
 
@@ -107,24 +161,56 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             public void onClick(View v) {
                 if (validateEditTexts())
                 {
-                    amount = amountET.getText().toString();
                     pin = pinET.getText().toString();
 
                     int selected = payTypeGroup.getCheckedRadioButtonId();
 
-                    payTypeButton = (RadioButton)findViewById(selected);
+                    payTypeButton = (RadioButton) findViewById(selected);
 
-
-
-                    if (payTypeButton.getText().toString().equals("Cash Payment"))
+                    if (transType.equals("Travel"))
                     {
-                        pDialog.show();
-                        authenticateUserCashPayment(amount, pin, accountNo);
+                        amount = easyDBHelper.getRouteTravelAmount(spinFromString, spinToString);
+
+                        if (payTypeButton.getText().toString().equals("Cash")) {
+
+                            if (amount.equals("0"))
+                            {
+                                routeUnavailablePdialog.show();
+                            }
+                            else
+                            {
+                                pDialog.show();
+                                authenticateUserCashPayment(amount, pin, accountNo);
+                            }
+                        }
+                        else
+                        {
+                            pDialog.show();
+                            authenticateUserCardPayment(amount, pin, accountNo);
+                        }
                     }
                     else
                     {
-                        pDialog.show();
-                        authenticateUserCardPayment(amount, pin, accountNo);
+                        amount = easyDBHelper.getRouteParcelAmount(spinFromString, spinToString);
+
+                        if (payTypeButton.getText().toString().equals("Cash"))
+                        {
+
+                            if (amount.equals("0"))
+                            {
+                                routeUnavailablePdialog.show();
+                            }
+                            else
+                            {
+                                pDialog.show();
+                                authenticateUserCashPayment(amount, pin, accountNo);
+                            }
+                        }
+                        else
+                        {
+                            pDialog.show();
+                            authenticateUserCardPayment(amount, pin, accountNo);
+                        }
                     }
                 }
             }
@@ -136,6 +222,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         transType.setAdapter(adapter);
 
+        spinFrom = (Spinner)findViewById(R.id.spinFrom);
+        spinTo = (Spinner)findViewById(R.id.spinTo);
+
+
+        ArrayAdapter<CharSequence> fromAdapter = ArrayAdapter.createFromResource(this, R.array.spinFrom, android.R.layout.simple_spinner_item);
+        fromAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinFrom.setAdapter(fromAdapter);
+        spinFrom.setOnItemSelectedListener(this);
 
         setSupportActionBar(toolbar);
 
@@ -153,11 +247,21 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP), 0);
 
         IntentFilter tagDiscovered = new IntentFilter(NfcAdapter.ACTION_TAG_DISCOVERED);
-        /*IntentFilter ndefDiscovered = new IntentFilter(NfcAdapter.ACTION_NDEF_DISCOVERED);
-        IntentFilter techDetected = new IntentFilter(NfcAdapter.ACTION_TECH_DISCOVERED);*/
-
         intentFilters = new IntentFilter[]{tagDiscovered};
 
+        Intent alarmIntent = new Intent(getApplicationContext(), SampleBC.class);
+        PendingIntent newPendingIntent = PendingIntent.getBroadcast(getApplicationContext(), 0, alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        AlarmManager alarmManager = (AlarmManager)getApplicationContext().getSystemService(Context.ALARM_SERVICE);
+        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, Calendar.getInstance().getTimeInMillis() + 5000, 10 * 1000, newPendingIntent);
+
+
+    }
+
+    public void launchIntent()
+    {
+
+        firstView.setVisibility(View.INVISIBLE);
+        secondView.setVisibility(View.VISIBLE);
     }
 
     @Override
@@ -266,11 +370,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     {
         boolean valid = true;
 
-        if(amountET.getText().toString().trim().equals(""))
-        {
-            amountET.setError("Please provide the amount of Purchase");
-            valid = false;
-        }
 
         if(pinET.getText().toString().trim().equals(""))
         {
@@ -301,6 +400,16 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             Toast.makeText(this, "You just hit me!", Toast.LENGTH_LONG);
         }
 
+        if (id == R.id.refresh) {
+            syncSQLiteMySQLDB();
+            return true;
+        }
+
+        if (id == R.id.intent) {
+            launchIntent();
+            return true;
+        }
+
 
 
         return super.onOptionsItemSelected(item);
@@ -309,8 +418,108 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     @Override
     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-        transType = (String) parent.getItemAtPosition(position);
+        //case transtype spinfrom
 
+        int spinnerId = parent.getId();
+
+        switch (spinnerId)
+        {
+            case R.id.transType:
+                transType = (String) parent.getItemAtPosition(position);
+                break;
+            case R.id.spinFrom:
+                spinFromString = (String) parent.getItemAtPosition(position);
+
+                if (spinFromString.equals("Nairobi"))
+                {
+                    ArrayAdapter<CharSequence> toAdapter = ArrayAdapter.createFromResource(MainActivity.this, R.array.spinTo1, android.R.layout.simple_spinner_item);
+                    toAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                    spinTo.setAdapter(toAdapter);
+                    spinTo.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                        @Override
+                        public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                            spinToString = (String) parent.getItemAtPosition(position);
+                        }
+
+                        @Override
+                        public void onNothingSelected(AdapterView<?> parent) {
+
+                        }
+                    });
+                }
+                else if (spinFromString.equals("Nakuru"))
+                {
+                    ArrayAdapter<CharSequence> toAdapter = ArrayAdapter.createFromResource(MainActivity.this, R.array.spinTo2, android.R.layout.simple_spinner_item);
+                    toAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                    spinTo.setAdapter(toAdapter);
+                    spinTo.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                        @Override
+                        public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                            spinToString = (String) parent.getItemAtPosition(position);
+                        }
+
+                        @Override
+                        public void onNothingSelected(AdapterView<?> parent) {
+
+                        }
+                    });
+                }
+                else if (spinFromString.equals("Eldoret"))
+                {
+                    ArrayAdapter<CharSequence> toAdapter = ArrayAdapter.createFromResource(MainActivity.this, R.array.spinTo3, android.R.layout.simple_spinner_item);
+                    toAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                    spinTo.setAdapter(toAdapter);
+                    spinTo.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                        @Override
+                        public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                            spinToString = (String) parent.getItemAtPosition(position);
+                        }
+
+                        @Override
+                        public void onNothingSelected(AdapterView<?> parent) {
+
+                        }
+                    });
+                }
+                else if (spinFromString.equals("Kisumu"))
+                {
+                    ArrayAdapter<CharSequence> toAdapter = ArrayAdapter.createFromResource(MainActivity.this, R.array.spinTo4, android.R.layout.simple_spinner_item);
+                    toAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                    spinTo.setAdapter(toAdapter);
+                    spinTo.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                        @Override
+                        public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                            spinToString = (String) parent.getItemAtPosition(position);
+                        }
+
+                        @Override
+                        public void onNothingSelected(AdapterView<?> parent) {
+
+                        }
+                    });
+                }
+
+                else {
+                    ArrayAdapter<CharSequence> toAdapter = ArrayAdapter.createFromResource(MainActivity.this, R.array.spinFrom, android.R.layout.simple_spinner_item);
+                    toAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                    spinTo.setAdapter(toAdapter);
+                    spinTo.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                        @Override
+                        public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                            spinToString = (String) parent.getItemAtPosition(position);
+                        }
+
+                        @Override
+                        public void onNothingSelected(AdapterView<?> parent) {
+
+                        }
+                    });
+                }
+                break;
+            default:
+                break;
+
+        }
     }
 
     @Override
@@ -353,7 +562,21 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         {
                             pDialog.dismiss();
 
-                            Displays.displayErrorAlert("Error", "Sorry, you entered an incorrect PIN", MainActivity.this);
+                            new SweetAlertDialog(MainActivity.this, SweetAlertDialog.ERROR_TYPE)
+                                    .setTitleText("Error")
+                                    .setContentText("Sorry, you entered an incorrect PIN")
+                                    .setConfirmText("Ok")
+                                    .setConfirmClickListener(new SweetAlertDialog.OnSweetClickListener() {
+                                        @Override
+                                        public void onClick(SweetAlertDialog sweetAlertDialog) {
+                                            sweetAlertDialog.dismiss();
+                                            startActivity(new Intent(MainActivity.this, MainActivity.class));
+                                        }
+
+                                    })
+                                    .show();
+
+                            //Displays.displayErrorAlert("Error", "Sorry, you entered an incorrect PIN", MainActivity.this);
 
                         }
 
@@ -361,14 +584,42 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         {
                             pDialog.dismiss();
 
-                            Displays.displayWarningAlert("Warning", "Sorry, Card payments are not yet supported", MainActivity.this);
+                            new SweetAlertDialog(MainActivity.this, SweetAlertDialog.ERROR_TYPE)
+                                    .setTitleText("Warning")
+                                    .setContentText("Sorry, Card payments are not yet supported")
+                                    .setConfirmText("Ok")
+                                    .setConfirmClickListener(new SweetAlertDialog.OnSweetClickListener() {
+                                        @Override
+                                        public void onClick(SweetAlertDialog sweetAlertDialog) {
+                                            sweetAlertDialog.dismiss();
+                                            startActivity(new Intent(MainActivity.this, MainActivity.class));
+                                        }
+
+                                    })
+                                    .show();
+
+                            //Displays.displayWarningAlert("Warning", "Sorry, Card payments are not yet supported", MainActivity.this);
 
                         }
                         else
                         {
                             pDialog.dismiss();
 
-                            Displays.displayErrorAlert("Error", "Sorry, an error occurred during your transaction. Please try again", MainActivity.this);
+                            new SweetAlertDialog(MainActivity.this, SweetAlertDialog.ERROR_TYPE)
+                                    .setTitleText("Error")
+                                    .setContentText("Sorry, an error occurred during your transaction. Please try again")
+                                    .setConfirmText("Ok")
+                                    .setConfirmClickListener(new SweetAlertDialog.OnSweetClickListener() {
+                                        @Override
+                                        public void onClick(SweetAlertDialog sweetAlertDialog) {
+                                            sweetAlertDialog.dismiss();
+                                            startActivity(new Intent(MainActivity.this, MainActivity.class));
+                                        }
+
+                                    })
+                                    .show();
+
+                            //Displays.displayErrorAlert("Error", "Sorry, an error occurred during your transaction. Please try again", MainActivity.this);
 
                         }
 
@@ -379,7 +630,21 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             {
                 pDialog.dismiss();
 
-                Displays.displayErrorAlert("Error", VolleyErrors.getVolleyErrorMessages(error, MainActivity.this), MainActivity.this);
+                new SweetAlertDialog(MainActivity.this, SweetAlertDialog.ERROR_TYPE)
+                        .setTitleText("Error")
+                        .setContentText(VolleyErrors.getVolleyErrorMessages(error, MainActivity.this))
+                        .setConfirmText("Ok")
+                        .setConfirmClickListener(new SweetAlertDialog.OnSweetClickListener() {
+                            @Override
+                            public void onClick(SweetAlertDialog sweetAlertDialog) {
+                                sweetAlertDialog.dismiss();
+                                startActivity(new Intent(MainActivity.this, MainActivity.class));
+                            }
+
+                        })
+                        .show();
+
+                //Displays.displayErrorAlert("Error", VolleyErrors.getVolleyErrorMessages(error, MainActivity.this), MainActivity.this);
 
             }
         }){
@@ -422,7 +687,137 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     {
         pDialog.dismiss();
 
-        Displays.displayWarningAlert("Warning", "Sorry, Card payments are not yet supported", MainActivity.this);
+
+        new SweetAlertDialog(MainActivity.this, SweetAlertDialog.ERROR_TYPE)
+                .setTitleText("Warning")
+                .setContentText("Sorry, Card payments are not yet supported")
+                .setConfirmText("Ok")
+                .setConfirmClickListener(new SweetAlertDialog.OnSweetClickListener() {
+                    @Override
+                    public void onClick(SweetAlertDialog sweetAlertDialog) {
+                        sweetAlertDialog.dismiss();
+                        startActivity(new Intent(MainActivity.this, MainActivity.class));
+                    }
+
+                })
+                .show();
+
+
+        //Displays.displayWarningAlert("Warning", "Sorry, Card payments are not yet supported", MainActivity.this);
         //Toast.makeText(MainActivity.this, payTypeButton.getText().toString()+amount+"pin"+pin+"transType"+transType, Toast.LENGTH_LONG).show();
     }
+
+
+    public void syncSQLiteMySQLDB()
+    {
+        AsyncHttpClient client = new AsyncHttpClient();
+        RequestParams requestParams = new RequestParams();
+
+        syncPDialog.show();
+
+        client.post("http://loyalty.hallsam.com/mysqlsqlitesync/getusers.php", requestParams, new AsyncHttpResponseHandler() {
+            @Override
+            public void onSuccess(String response) {
+                syncPDialog.hide();
+                updateSQLite(response);
+
+            }
+
+            @Override
+            public void onFailure(int statusCode, Throwable error, String content) {
+                syncPDialog.hide();
+
+                if (statusCode == 404) {
+                    Toast.makeText(getApplicationContext(), "Requested resource not found", Toast.LENGTH_LONG).show();
+                } else if (statusCode == 500) {
+                    Toast.makeText(getApplicationContext(), "Something went wrong at server end", Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(getApplicationContext(), "Unexpected Error occurred! [Most common Error: Device might not be connected to Internet]",
+                            Toast.LENGTH_LONG).show();
+                }
+
+            }
+        });
+    }
+
+
+
+    public void updateSQLite(String response)
+    {
+        ArrayList<HashMap<String, String>> userSyncList;
+        userSyncList = new ArrayList<HashMap<String, String>>();
+
+        Gson gson = new GsonBuilder().create();
+
+        try
+        {
+
+
+
+            JSONArray arr = new JSONArray(response);
+            if (arr.length() != 0)
+            {
+                for (int i=0; i<arr.length(); i++)
+                {
+                    JSONObject jsonObject = (JSONObject) arr.get(i);
+                    queryValues = new HashMap<String, String>();
+
+                    queryValues.put("u_id", jsonObject.get("u_id").toString());
+                    queryValues.put("destination_from", jsonObject.get("destination_from").toString());
+                    queryValues.put("destination_to", jsonObject.get("destination_to").toString());
+                    queryValues.put("parcel_charge", jsonObject.get("parcel_charge").toString());
+                    queryValues.put("travel_charge", jsonObject.get("travel_charge").toString());
+
+                    easyDBHelper.insertPrice(queryValues);
+
+                    HashMap<String, String> map = new HashMap<String, String>();
+                    map.put("Id", jsonObject.get("u_id").toString());
+                    map.put("status", "1");
+                    userSyncList.add(map);
+                }
+
+            }
+
+            updateMySQLSyncStatus(gson.toJson(userSyncList));
+
+        }
+        catch (JSONException e)
+        {
+            e.printStackTrace();
+        }
+
+    }
+
+
+    public void updateMySQLSyncStatus(String json)
+    {
+        AsyncHttpClient client = new AsyncHttpClient();
+        RequestParams params = new RequestParams();
+        params.put("syncsts", json);
+
+        client.post("http://loyalty.hallsam.com/mysqlsqlitesync/updatesyncsts.php", params, new AsyncHttpResponseHandler() {
+            @Override
+            public void onSuccess(String response) {
+                //Toast.makeText(getApplicationContext(), "MySQL DB has been informed about Sync activity", Toast.LENGTH_LONG).show();
+                syncSuccessPdialog.show();
+            }
+
+            @Override
+            public void onFailure(int statusCode, Throwable error, String content) {
+                //Toast.makeText(getApplicationContext(), "An Error Occured", Toast.LENGTH_LONG).show();
+
+            }
+        });
+
+    }
+
+    public void reloadActivity()
+    {
+        Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+        startActivity(intent);
+
+    }
+
+
+
 }

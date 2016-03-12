@@ -62,7 +62,21 @@
         <activity
             android:name=".LoginActivity"
             android:label="@string/title_activity_login"
-            android:theme="@style/AppTheme"></activity>
+            android:theme="@style/AppTheme">
+
+        </activity>
+        <service
+            android:name=".utils.MyService"
+            android:enabled="true" />
+        <!--  Register BroadCase Receiver -->
+        <receiver
+            android:name=".utils.SampleBC"
+            android:process=":remote" >
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <category android:name="android.intent.category.HOME" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

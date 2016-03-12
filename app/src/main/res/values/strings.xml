@@ -21,6 +21,32 @@
         <item>Travel</item>
         <item>Parcel</item>
     </string-array>
+    <string-array name="spinFrom">
+        <item>Nairobi</item>
+        <item>Nakuru</item>
+        <item>Eldoret</item>
+        <item>Kisumu</item>
+    </string-array>
+    <string-array name="spinTo1">
+        <item>Nakuru</item>
+        <item>Eldoret</item>
+        <item>Kisumu</item>
+    </string-array>
+    <string-array name="spinTo2">
+        <item>Eldoret</item>
+        <item>Kisumu</item>
+        <item>Nairobi</item>
+    </string-array>
+    <string-array name="spinTo3">
+        <item>Kisumu</item>
+        <item>Nairobi</item>
+        <item>Nakuru</item>
+    </string-array>
+    <string-array name="spinTo4">
+        <item>Nairobi</item>
+        <item>Nakuru</item>
+        <item>Eldoret</item>
+    </string-array>
     <string name="title_activity_redeem">Redeem Points</string>
 
 
