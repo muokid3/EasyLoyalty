@@ -3,12 +3,10 @@ package com.easycoach.easyloyalty;
 import android.app.AlarmManager;
 import android.app.AlertDialog;
 import android.app.PendingIntent;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.nfc.NdefMessage;
 import android.nfc.NdefRecord;
@@ -29,12 +27,9 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ListAdapter;
-import android.widget.ListView;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.ScrollView;
-import android.widget.SimpleAdapter;
 import android.widget.Spinner;
 import android.widget.Toast;
 
@@ -44,16 +39,13 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
-import com.easycoach.easyloyalty.utils.Displays;
 import com.easycoach.easyloyalty.utils.EasyDBHelper;
 import com.easycoach.easyloyalty.utils.SampleBC;
 import com.easycoach.easyloyalty.utils.UserLocalStore;
 import com.easycoach.easyloyalty.utils.VolleyErrors;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.loopj.android.http.AsyncHttpClient;
-import com.loopj.android.http.AsyncHttpResponseHandler;
-import com.loopj.android.http.RequestParams;
+
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -531,7 +523,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private void authenticateUserCashPayment(final String amount, final String pin, final String accountNo)
     {
         final String payType = payTypeButton.getText().toString();
-        //Toast.makeText(MainActivity.this, payTypeButton.getText().toString()+amount+"pin"+accountNo+"transType"+transType, Toast.LENGTH_LONG).show();
         StringRequest stringRequest = new StringRequest(Request.Method.POST, TRANSACT_URL,
                 new Response.Listener<String>() {
                     @Override
@@ -575,9 +566,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
                                     })
                                     .show();
-
-                            //Displays.displayErrorAlert("Error", "Sorry, you entered an incorrect PIN", MainActivity.this);
-
                         }
 
                         else if (response.equals("wait"))
@@ -597,9 +585,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
                                     })
                                     .show();
-
-                            //Displays.displayWarningAlert("Warning", "Sorry, Card payments are not yet supported", MainActivity.this);
-
                         }
                         else
                         {
@@ -618,9 +603,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
                                     })
                                     .show();
-
-                            //Displays.displayErrorAlert("Error", "Sorry, an error occurred during your transaction. Please try again", MainActivity.this);
-
                         }
 
                     }
@@ -644,7 +626,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         })
                         .show();
 
-                //Displays.displayErrorAlert("Error", VolleyErrors.getVolleyErrorMessages(error, MainActivity.this), MainActivity.this);
 
             }
         }){
@@ -701,43 +682,49 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
                 })
                 .show();
-
-
-        //Displays.displayWarningAlert("Warning", "Sorry, Card payments are not yet supported", MainActivity.this);
-        //Toast.makeText(MainActivity.this, payTypeButton.getText().toString()+amount+"pin"+pin+"transType"+transType, Toast.LENGTH_LONG).show();
     }
 
 
     public void syncSQLiteMySQLDB()
     {
-        AsyncHttpClient client = new AsyncHttpClient();
-        RequestParams requestParams = new RequestParams();
 
         syncPDialog.show();
 
-        client.post("http://loyalty.hallsam.com/mysqlsqlitesync/getusers.php", requestParams, new AsyncHttpResponseHandler() {
+        StringRequest stringRequest = new StringRequest(Request.Method.POST, "http://loyalty.hallsam.com/mysqlsqlitesync/getusers.php",
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response)
+                    {
+                        syncPDialog.hide();
+                        updateSQLite(response);
+                    }
+                }, new Response.ErrorListener() {
             @Override
-            public void onSuccess(String response) {
-                syncPDialog.hide();
-                updateSQLite(response);
-
-            }
-
-            @Override
-            public void onFailure(int statusCode, Throwable error, String content) {
+            public void onErrorResponse(VolleyError error)
+            {
                 syncPDialog.hide();
 
-                if (statusCode == 404) {
-                    Toast.makeText(getApplicationContext(), "Requested resource not found", Toast.LENGTH_LONG).show();
-                } else if (statusCode == 500) {
-                    Toast.makeText(getApplicationContext(), "Something went wrong at server end", Toast.LENGTH_LONG).show();
-                } else {
-                    Toast.makeText(getApplicationContext(), "Unexpected Error occurred! [Most common Error: Device might not be connected to Internet]",
-                            Toast.LENGTH_LONG).show();
-                }
+                new SweetAlertDialog(MainActivity.this, SweetAlertDialog.ERROR_TYPE)
+                        .setTitleText("Error")
+                        .setContentText(VolleyErrors.getVolleyErrorMessages(error, MainActivity.this))
+                        .setConfirmText("Ok")
+                        .setConfirmClickListener(new SweetAlertDialog.OnSweetClickListener() {
+                            @Override
+                            public void onClick(SweetAlertDialog sweetAlertDialog) {
+                                sweetAlertDialog.dismiss();
+                                startActivity(new Intent(MainActivity.this, MainActivity.class));
+                            }
 
+                        })
+                        .show();
             }
         });
+
+
+        RequestQueue requestQueue = Volley.newRequestQueue(this);
+        requestQueue.add(stringRequest);
+
+
     }
 
 
@@ -789,25 +776,56 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     }
 
 
-    public void updateMySQLSyncStatus(String json)
+    public void updateMySQLSyncStatus(final String json)
     {
-        AsyncHttpClient client = new AsyncHttpClient();
-        RequestParams params = new RequestParams();
-        params.put("syncsts", json);
 
-        client.post("http://loyalty.hallsam.com/mysqlsqlitesync/updatesyncsts.php", params, new AsyncHttpResponseHandler() {
+
+        StringRequest stringRequest = new StringRequest(Request.Method.POST, "http://loyalty.hallsam.com/mysqlsqlitesync/updatesyncsts.php",
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response)
+                    {
+                        syncSuccessPdialog.show();
+
+                    }
+                }, new Response.ErrorListener() {
             @Override
-            public void onSuccess(String response) {
-                //Toast.makeText(getApplicationContext(), "MySQL DB has been informed about Sync activity", Toast.LENGTH_LONG).show();
-                syncSuccessPdialog.show();
-            }
+            public void onErrorResponse(VolleyError error)
+            {
+                pDialog.dismiss();
 
+                new SweetAlertDialog(MainActivity.this, SweetAlertDialog.ERROR_TYPE)
+                        .setTitleText("Error")
+                        .setContentText(VolleyErrors.getVolleyErrorMessages(error, MainActivity.this))
+                        .setConfirmText("Ok")
+                        .setConfirmClickListener(new SweetAlertDialog.OnSweetClickListener() {
+                            @Override
+                            public void onClick(SweetAlertDialog sweetAlertDialog) {
+                                sweetAlertDialog.dismiss();
+                                startActivity(new Intent(MainActivity.this, MainActivity.class));
+                            }
+
+                        })
+                        .show();
+
+
+            }
+        }){
             @Override
-            public void onFailure(int statusCode, Throwable error, String content) {
-                //Toast.makeText(getApplicationContext(), "An Error Occured", Toast.LENGTH_LONG).show();
+            protected Map<String, String> getParams()
+            {
+                Map <String, String> params = new HashMap<String, String>();
+                params.put("syncsts", json);
 
+                return params;
             }
-        });
+        };
+
+
+        RequestQueue requestQueue = Volley.newRequestQueue(this);
+        requestQueue.add(stringRequest);
+
+
 
     }
 

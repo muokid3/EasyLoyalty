@@ -43,9 +43,9 @@ public class MyService extends Service {
         int notifyID = 9001;
         mNotifyBuilder = new NotificationCompat.Builder(this)
                 .setContentTitle("Sync Needed")
-                //.setContentText("You've received new messages.")
-                .setSmallIcon(R.mipmap.ic_launcher);
-        mNotifyBuilder.setContentInfo("Please SYNC to reflect new MySQL DB changes");
+                //.setContentText("SYNC to update Routes")
+                .setSmallIcon(R.drawable.easylogo);
+        mNotifyBuilder.setContentInfo("SYNC to update Routes");
         // Set pending intent
         mNotifyBuilder.setContentIntent(resultPendingIntent);
         // Set Vibrate, Sound and Light
