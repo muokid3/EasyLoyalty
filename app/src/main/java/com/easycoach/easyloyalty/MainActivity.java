@@ -46,7 +46,6 @@ import com.easycoach.easyloyalty.utils.VolleyErrors;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -249,12 +248,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     }
 
-    public void launchIntent()
-    {
-
-        firstView.setVisibility(View.INVISIBLE);
-        secondView.setVisibility(View.VISIBLE);
-    }
 
     @Override
     protected void onNewIntent(Intent intent) {
@@ -397,10 +390,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             return true;
         }
 
-        if (id == R.id.intent) {
-            launchIntent();
-            return true;
-        }
 
 
 

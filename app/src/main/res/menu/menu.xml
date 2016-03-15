@@ -10,7 +10,7 @@
 
     <item
         android:id="@+id/home"
-        android:icon="@drawable/home"
+        android:icon="@drawable/ic_home"
         android:orderInCategory="300"
         android:title="@string/next"
         app:showAsAction="always" />

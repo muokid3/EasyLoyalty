@@ -44,7 +44,7 @@ public class MyService extends Service {
         mNotifyBuilder = new NotificationCompat.Builder(this)
                 .setContentTitle("Sync Needed")
                 //.setContentText("SYNC to update Routes")
-                .setSmallIcon(R.drawable.easylogo);
+                .setSmallIcon(R.mipmap.logo_light_backgrounds);
         mNotifyBuilder.setContentInfo("SYNC to update Routes");
         // Set pending intent
         mNotifyBuilder.setContentIntent(resultPendingIntent);

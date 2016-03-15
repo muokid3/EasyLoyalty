@@ -19,8 +19,6 @@ import android.widget.TextView;
 import com.easycoach.easyloyalty.utils.User;
 import com.easycoach.easyloyalty.utils.UserLocalStore;
 
-import junit.framework.Test;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -94,7 +92,7 @@ public class NavigationDrawerFragment extends Fragment implements InfoAdapter.My
     {
         List<Information> data = new ArrayList<>();
 
-        int icons [] = {R.drawable.regnew, R.drawable.redeemnew, R.drawable.resetpinnew, R.drawable.pointsnew, R.drawable.logoutnewer};
+        int icons [] = {R.drawable.ic_person_add, R.drawable.ic_redeem, R.drawable.ic_reset_pin, R.drawable.ic_check_points, R.drawable.ic_power};
         String titles [] = {"Register", "Redeem", "Reset PIN", "Check Points", "Logout"};
 
         //for (int i=0; i<3 && i<3; i++)

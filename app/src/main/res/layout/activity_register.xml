@@ -42,144 +42,129 @@
         </TableRow>
 
 
-        <TableRow
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceSmall"
-                android:text="Name"
-                android:id="@+id/textView2"
-                android:layout_marginLeft="5dp"
-                android:textColor="@color/colorLabels"
-                android:layout_column="0" />
-        </TableRow>
 
         <TableRow
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:layout_marginTop="10dp">
 
-            <EditText
-                android:layout_width="wrap_content"
+            <android.support.design.widget.TextInputLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textPersonName"
-                android:ems="10"
-                android:id="@+id/cName"
-                android:textAppearance="?android:attr/textAppearanceSmall"
-                android:hint="Enter Customer Name"
-                android:layout_marginBottom="10dp" />
-        </TableRow>
+                android:gravity="center">
 
-        <TableRow
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
+                <EditText
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPersonName"
+                    android:ems="10"
+                    android:id="@+id/cName"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    android:hint="Enter Customer Name"
+                    android:layout_marginBottom="10dp" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceSmall"
-                android:text="ID Number"
-                android:textColor="@color/colorLabels"
-                android:id="@+id/textView3"
-                android:layout_marginLeft="5dp"
-                android:layout_column="0" />
-        </TableRow>
+            </android.support.design.widget.TextInputLayout>
 
-        <TableRow
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-            <EditText
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:inputType="number"
-                android:ems="10"
-                android:id="@+id/IDNo"
-                android:hint="Enter ID Number"
-                android:textAppearance="?android:attr/textAppearanceSmall"
-                android:layout_marginBottom="10dp" />
-        </TableRow>
-
-
-        <TableRow
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceSmall"
-                android:text="Phone Number"
-                android:textColor="@color/colorLabels"
-                android:id="@+id/textView4"
-                android:layout_marginLeft="5dp"
-                android:layout_column="0" />
-        </TableRow>
-
-        <TableRow
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-            <EditText
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:inputType="phone"
-                android:ems="10"
-                android:id="@+id/cPhone"
-                android:hint="Enter Customer Phone Number"
-                android:textAppearance="?android:attr/textAppearanceSmall"
-                android:layout_marginBottom="10dp" />
-        </TableRow>
-
-        <TableRow
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceSmall"
-                android:text="E-Mail"
-                android:textColor="@color/colorLabels"
-                android:id="@+id/textView5"
-                android:layout_marginLeft="5dp"
-                android:layout_column="0" />
-        </TableRow>
-
-        <TableRow
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-            <EditText
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:inputType="textEmailAddress"
-                android:id="@+id/cEmail"
-                android:hint="Enter Customer E-Mail"
-                android:textAppearance="?android:attr/textAppearanceSmall"
-                android:layout_marginBottom="10dp" />
         </TableRow>
 
 
 
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="10dp">
+
+            <android.support.design.widget.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center">
+
+                <EditText
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:ems="10"
+                    android:id="@+id/IDNo"
+                    android:hint="Enter ID Number"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    android:layout_marginBottom="10dp" />
+
+            </android.support.design.widget.TextInputLayout>
+
+
+        </TableRow>
+
 
 
         <TableRow
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="10dp">
+
+            <android.support.design.widget.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center">
+
+                <EditText
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:inputType="phone"
+                    android:ems="10"
+                    android:id="@+id/cPhone"
+                    android:hint="Enter Phone Number"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    android:layout_marginBottom="10dp" />
+
+            </android.support.design.widget.TextInputLayout>
+
+
+        </TableRow>
+
+
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="10dp">
+
+            <android.support.design.widget.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center">
+
+                <EditText
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:inputType="textEmailAddress"
+                    android:ems="10"
+                    android:id="@+id/cEmail"
+                    android:hint="Enter E-Mail"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    android:layout_marginBottom="10dp" />
+
+            </android.support.design.widget.TextInputLayout>
+
+
+        </TableRow>
+
+
+
+        <TableRow
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:gravity="center"
-            android:layout_weight="1">
+            android:gravity="center">
 
-            <Button
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Register"
-                android:id="@+id/btnRegister"
-                android:background="@color/colorPrimary"
-                android:textColor="@color/white"/>
+                <Button
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Register"
+                    android:id="@+id/btnRegister"
+                    android:background="@color/colorPrimary"
+                    android:textColor="@color/white"/>
+
+
         </TableRow>
 
 
