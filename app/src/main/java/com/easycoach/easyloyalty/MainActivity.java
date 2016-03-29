@@ -176,8 +176,15 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         }
                         else
                         {
-                            pDialog.show();
-                            authenticateUserCardPayment(amount, pin, accountNo);
+                            if (amount.equals("0"))
+                            {
+                                routeUnavailablePdialog.show();
+                            }
+                            else
+                            {
+                                pDialog.show();
+                                authenticateUserCardPayment(amount, pin, accountNo);
+                            }
                         }
                     }
                     else
@@ -199,8 +206,15 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         }
                         else
                         {
-                            pDialog.show();
-                            authenticateUserCardPayment(amount, pin, accountNo);
+                            if (amount.equals("0"))
+                            {
+                                routeUnavailablePdialog.show();
+                            }
+                            else
+                            {
+                                pDialog.show();
+                                authenticateUserCardPayment(amount, pin, accountNo);
+                            }
                         }
                     }
                 }
@@ -557,24 +571,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                                     .show();
                         }
 
-                        else if (response.equals("wait"))
-                        {
-                            pDialog.dismiss();
-
-                            new SweetAlertDialog(MainActivity.this, SweetAlertDialog.ERROR_TYPE)
-                                    .setTitleText("Warning")
-                                    .setContentText("Sorry, Card payments are not yet supported")
-                                    .setConfirmText("Ok")
-                                    .setConfirmClickListener(new SweetAlertDialog.OnSweetClickListener() {
-                                        @Override
-                                        public void onClick(SweetAlertDialog sweetAlertDialog) {
-                                            sweetAlertDialog.dismiss();
-                                            startActivity(new Intent(MainActivity.this, MainActivity.class));
-                                        }
-
-                                    })
-                                    .show();
-                        }
                         else
                         {
                             pDialog.dismiss();
@@ -653,24 +649,133 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     }
 
     //card payments
-    private void authenticateUserCardPayment(String amount, String pin, String accountNo)
+    private void authenticateUserCardPayment(final String amount, final String pin, final String accountNo)
     {
-        pDialog.dismiss();
-
-
-        new SweetAlertDialog(MainActivity.this, SweetAlertDialog.ERROR_TYPE)
-                .setTitleText("Warning")
-                .setContentText("Sorry, Card payments are not yet supported")
-                .setConfirmText("Ok")
-                .setConfirmClickListener(new SweetAlertDialog.OnSweetClickListener() {
+        final String payType = payTypeButton.getText().toString();
+        StringRequest stringRequest = new StringRequest(Request.Method.POST, TRANSACT_URL,
+                new Response.Listener<String>() {
                     @Override
-                    public void onClick(SweetAlertDialog sweetAlertDialog) {
-                        sweetAlertDialog.dismiss();
-                        startActivity(new Intent(MainActivity.this, MainActivity.class));
-                    }
+                    public void onResponse(String response)
+                    {
+                        pDialog.dismiss();
+                        if (response.equals("success"))
+                        {
+                            pDialog.dismiss();
 
-                })
-                .show();
+
+                            new SweetAlertDialog(MainActivity.this, SweetAlertDialog.SUCCESS_TYPE)
+                                    .setTitleText("Success!")
+                                    .setContentText("Transaction Recorded Successfully")
+                                    .setConfirmText("Ok")
+                                    .setConfirmClickListener(new SweetAlertDialog.OnSweetClickListener() {
+                                        @Override
+                                        public void onClick(SweetAlertDialog sweetAlertDialog) {
+                                            sweetAlertDialog.dismiss();
+                                            startActivity(new Intent(MainActivity.this, MainActivity.class));
+                                        }
+
+                                    })
+                                    .show();
+
+                        }
+                        else if (response.equals("pinFail"))
+                        {
+                            pDialog.dismiss();
+
+                            new SweetAlertDialog(MainActivity.this, SweetAlertDialog.ERROR_TYPE)
+                                    .setTitleText("Error")
+                                    .setContentText("Sorry, you entered an incorrect PIN")
+                                    .setConfirmText("Ok")
+                                    .setConfirmClickListener(new SweetAlertDialog.OnSweetClickListener() {
+                                        @Override
+                                        public void onClick(SweetAlertDialog sweetAlertDialog) {
+                                            sweetAlertDialog.dismiss();
+                                            startActivity(new Intent(MainActivity.this, MainActivity.class));
+                                        }
+
+                                    })
+                                    .show();
+                        }
+
+                        else if (response.equals("balFail"))
+                        {
+                            pDialog.dismiss();
+
+                            new SweetAlertDialog(MainActivity.this, SweetAlertDialog.WARNING_TYPE)
+                                    .setTitleText("Warning")
+                                    .setContentText("Sorry, Your card  balance is insufficient")
+                                    .setConfirmText("Ok")
+                                    .setConfirmClickListener(new SweetAlertDialog.OnSweetClickListener() {
+                                        @Override
+                                        public void onClick(SweetAlertDialog sweetAlertDialog) {
+                                            sweetAlertDialog.dismiss();
+                                            startActivity(new Intent(MainActivity.this, MainActivity.class));
+                                        }
+
+                                    })
+                                    .show();
+                        }
+                        else
+                        {
+                            pDialog.dismiss();
+
+                            new SweetAlertDialog(MainActivity.this, SweetAlertDialog.ERROR_TYPE)
+                                    .setTitleText("Error")
+                                    .setContentText("Sorry, an error occurred during your transaction. Please try again")
+                                    .setConfirmText("Ok")
+                                    .setConfirmClickListener(new SweetAlertDialog.OnSweetClickListener() {
+                                        @Override
+                                        public void onClick(SweetAlertDialog sweetAlertDialog) {
+                                            sweetAlertDialog.dismiss();
+                                            startActivity(new Intent(MainActivity.this, MainActivity.class));
+                                        }
+
+                                    })
+                                    .show();
+                        }
+
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error)
+            {
+                pDialog.dismiss();
+
+                new SweetAlertDialog(MainActivity.this, SweetAlertDialog.ERROR_TYPE)
+                        .setTitleText("Error")
+                        .setContentText(VolleyErrors.getVolleyErrorMessages(error, MainActivity.this))
+                        .setConfirmText("Ok")
+                        .setConfirmClickListener(new SweetAlertDialog.OnSweetClickListener() {
+                            @Override
+                            public void onClick(SweetAlertDialog sweetAlertDialog) {
+                                sweetAlertDialog.dismiss();
+                                startActivity(new Intent(MainActivity.this, MainActivity.class));
+                            }
+
+                        })
+                        .show();
+
+
+            }
+        }){
+            @Override
+            protected Map<String, String> getParams()
+            {
+                Map <String, String> params = new HashMap<String, String>();
+                params.put(KEY_ACCOUNT_NO, accountNo);
+                params.put(KEY_AMOUNT, amount);
+                params.put(KEY_PAY_TYPE, payType);
+                params.put(KEY_PIN, pin);
+                params.put(KEY_TRANS_TYPE, transType);
+                params.put(KEY_AGENT_NAME, userLocalStore.getLoggedInUser().name);
+                params.put(KEY_BRANCH, userLocalStore.getLoggedInUser().branch);
+                return params;
+            }
+        };
+
+
+        RequestQueue requestQueue = Volley.newRequestQueue(this);
+        requestQueue.add(stringRequest);
     }
 
 
