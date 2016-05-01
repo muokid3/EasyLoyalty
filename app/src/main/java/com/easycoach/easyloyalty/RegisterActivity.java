@@ -35,6 +35,7 @@ public class RegisterActivity extends AppCompatActivity {
     EditText cName, IDNo, cPhone, cEmail;
     Button registerButton;
     UserLocalStore userLocalStore;
+    SweetAlertDialog registeredDialog;
 
     public static final String REGISTER_URL = "http://loyalty.hallsam.com/volleyRegister.php";
 
@@ -116,13 +117,38 @@ public class RegisterActivity extends AppCompatActivity {
                     @Override
                     public void onResponse(String response)
                     {
-                        Intent writeCard = new Intent(RegisterActivity.this, WriteCardActivity.class);
-                        Bundle b = new Bundle();
-                        b.putString("accountNo", response);
-                        writeCard.putExtras(b);
+                        if(response.equals("registered"))
+                        {
+                            registeredDialog = new SweetAlertDialog(RegisterActivity.this, SweetAlertDialog.WARNING_TYPE);
+                            registeredDialog.getProgressHelper().setBarColor(Color.parseColor("#A5DC86"));
+                            registeredDialog.setTitleText("Warning!");
+                            registeredDialog.setContentText("The provided ID Number is already registered!");
+                            registeredDialog.setConfirmClickListener(new SweetAlertDialog.OnSweetClickListener() {
+                                @Override
+                                public void onClick(SweetAlertDialog sweetAlertDialog) {
+                                    Intent intent = new Intent(RegisterActivity.this, MainActivity.class);
+                                    Bundle b = new Bundle();
+                                    b.putBoolean("new_window", true); //sets new window
+                                    intent.putExtras(b);
+                                    startActivity(intent);
+                                }
+                            });
+
+                            registeredDialog.show();
+
+                        }
+                        else
+                        {
+                            Intent writeCard = new Intent(RegisterActivity.this, WriteCardActivity.class);
+                            Bundle b = new Bundle();
+                            b.putString("accountNo", response);
+                            writeCard.putExtras(b);
 
 
-                        startActivity(writeCard);
+                            startActivity(writeCard);
+                        }
+
+
                     }
                 }, new Response.ErrorListener() {
             @Override
